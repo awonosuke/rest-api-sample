@@ -28,29 +28,27 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
 		log.Fatalf("failed to listen port %d: %v", cfg.Port, err)
 	}
-
 	url := fmt.Sprintf("http://%s", l.Addr().String())
 	log.Printf("start with: %v", url)
-
 	s := &http.Server{
-		// 引数で受け取ったnet.Listenerを利用するので、Addrフィールドを指定しない
+		// 引数で受け取ったnet.Listenerを利用するので、
+		// Addrフィールドは指定しない
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// コマンドライン実験用
+			// コマンドラインで実験するため
 			time.Sleep(5 * time.Second)
 			fmt.Fprintf(w, "Hello, %s!", r.URL.Path[1:])
 		}),
 	}
-
 	eg, ctx := errgroup.WithContext(ctx)
-	// 別goroutineでHTTPサーバーを起動する
 	eg.Go(func() error {
-		// http.ErrServeClosed()はhttp.Server.Shutdown()が正常終了したことを示すので異常ではない
+		// ListenAndServeメソッドではなく、Serveメソッドに変更する
 		if err := s.Serve(l); err != nil &&
+			// http.ErrServerClosed は
+			// http.Server.Shutdown() が正常に終了したことを示すので異常ではない。
 			err != http.ErrServerClosed {
 			log.Printf("failed to close: %+v", err)
 			return err
@@ -58,11 +56,10 @@ func run(ctx context.Context) error {
 		return nil
 	})
 
-	// チャンネルからの通知（終了通知）を待機する
 	<-ctx.Done()
 	if err := s.Shutdown(context.Background()); err != nil {
 		log.Printf("failed to shutdown: %+v", err)
 	}
-	// Goメソッドで起動した別goroutineの終了を待つ
+	// グレースフルシャットダウンの終了を待つ。
 	return eg.Wait()
 }

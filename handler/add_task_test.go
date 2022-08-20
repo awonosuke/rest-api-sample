@@ -54,7 +54,7 @@ func TestAddTask(t *testing.T) {
 				},
 				Validator: validator.New(),
 			}
-			sut.ServeHTTP(w, r)
+			sut.ServerHTTP(w, r)
 
 			resp := w.Result()
 			testutil.AssertResponse(t,

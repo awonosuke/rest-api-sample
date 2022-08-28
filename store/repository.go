@@ -24,7 +24,6 @@ func New(ctx context.Context, cfg *config.Config) (*sqlx.DB, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-
 	// Openは実際に接続テストが行われない
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
@@ -33,6 +32,10 @@ func New(ctx context.Context, cfg *config.Config) (*sqlx.DB, func(), error) {
 	}
 	xdb := sqlx.NewDb(db, "mysql")
 	return xdb, func() { _ = db.Close() }, nil
+}
+
+type Repository struct {
+	Clocker clock.Clocker
 }
 
 type Beginner interface {
@@ -44,8 +47,8 @@ type Preparer interface {
 }
 
 type Execer interface {
-	ExeContext(ctx context.Context, query string, args ...any) (sql.Result, error)
-	NameExecContext(ctx context.Context, query string, arg interface{}) (sql.Result, error)
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	NamedExecContext(ctx context.Context, query string, arg interface{}) (sql.Result, error)
 }
 
 type Queryer interface {
@@ -57,13 +60,10 @@ type Queryer interface {
 }
 
 var (
+	// インターフェイスが期待通りに宣言されているか確認
 	_ Beginner = (*sqlx.DB)(nil)
 	_ Preparer = (*sqlx.DB)(nil)
 	_ Queryer  = (*sqlx.DB)(nil)
 	_ Execer   = (*sqlx.DB)(nil)
 	_ Execer   = (*sqlx.Tx)(nil)
 )
-
-type Repository struct {
-	Clocker clock.Clocker
-}

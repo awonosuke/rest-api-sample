@@ -10,11 +10,9 @@ import (
 )
 
 func OpenDBForTest(t *testing.T) *sqlx.DB {
-	t.Helper()
-
 	port := 33306
 	if _, defined := os.LookupEnv("CI"); defined {
-		port = 33306
+		port = 3306
 	}
 	db, err := sql.Open(
 		"mysql",
